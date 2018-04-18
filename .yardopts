@@ -1,0 +1,7 @@
+--readme README.md
+--markup markdown
+lib/*.rb
+lib/*/*.rb
+-
+CHANGELOG.md
+LICENSE
