@@ -98,7 +98,7 @@ The sec1-v2 document allows for a many combinations of various algorithms for EC
 
 ## Supported platforms
 
-Ruby 2.0 and above, including jruby.
+Ruby 2.1 and above, including jruby.
 
 ## Documentation
 
