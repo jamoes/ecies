@@ -62,7 +62,7 @@ module ECIES
 
       group_copy = OpenSSL::PKey::EC::Group.new(key.group)
       group_copy.point_conversion_form = :compressed
-      ephemeral_key = OpenSSL::PKey::EC.new(group_copy).generate_key!
+      ephemeral_key = OpenSSL::PKey::EC.new(group_copy).generate_key
 
       shared_secret = ephemeral_key.dh_compute_key(key.public_key)
 
@@ -100,7 +100,7 @@ module ECIES
       ciphertext = encrypted_message.byteslice(ephemeral_public_key_length, ciphertext_length)
       mac = encrypted_message.byteslice(-@mac_length, @mac_length)
 
-      ephemeral_public_key = OpenSSL::PKey::EC::Point.new(group_copy, ephemeral_public_key_text)
+      ephemeral_public_key = OpenSSL::PKey::EC::Point.new(group_copy, OpenSSL::BN.new(ephemeral_public_key_text, 2))
 
       shared_secret = key.dh_compute_key(ephemeral_public_key)
 

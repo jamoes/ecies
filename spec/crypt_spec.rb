@@ -5,7 +5,7 @@ describe ECIES::Crypt do
   describe 'Encryption and decryption' do
 
     it 'Encrypts and decrypts' do
-      key = OpenSSL::PKey::EC.new('secp256k1').generate_key!
+      key = OpenSSL::PKey::EC.new('secp256k1').generate_key
       crypt = ECIES::Crypt.new
 
       encrypted = crypt.encrypt(key, 'secret')
@@ -14,16 +14,16 @@ describe ECIES::Crypt do
 
     it 'Encrypts to known values' do
       OpenSSL::PKey::EC.class_eval do
-        # Overwrites `generate_key!` for both the test code below, and the
+        # Overwrites `generate_key` for both the test code below, and the
         # ephemeral_key generated in the `encrypt` method.
-        def generate_key!
+        def generate_key
           self.private_key = 2
           self.public_key = group.generator.mul(private_key)
           self
         end
       end
 
-      key = OpenSSL::PKey::EC.new('secp256k1').generate_key!
+      key = OpenSSL::PKey::EC.new('secp256k1').generate_key
 
       crypt = ECIES::Crypt.new
       crypt_full = ECIES::Crypt.new(mac_length: :full)
@@ -58,7 +58,7 @@ describe ECIES::Crypt do
     end
 
     it 'Raises on unknown cipher or digest' do
-      key = OpenSSL::PKey::EC.new('secp256k1').generate_key!
+      key = OpenSSL::PKey::EC.new('secp256k1').generate_key
 
       expect{ ECIES::Crypt.new(digest: 'foo') }.to raise_error(RuntimeError)
       expect{ ECIES::Crypt.new(digest: 'md5') }.to raise_error(RuntimeError)
