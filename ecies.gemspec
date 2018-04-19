@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.authors     = ['Stephen McCarthy']
   s.email       = 'sjmccarthy@gmail.com'
   s.summary     = 'Elliptical Curve Integrated Encryption System (ECIES), as specified by SEC 1 - Ver. 2.0'
-  s.decription  = <<-DESCRIPTION
+  s.description = <<-DESCRIPTION
   ECIES is a public-key encryption scheme based on ECC. It can be used to encrypt
   messages to bitcoin addresses with keys published on the blockchain, and
   subsequently to decrypt messages by the holders of the address's private key.
