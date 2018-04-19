@@ -12,6 +12,35 @@ describe ECIES::Crypt do
       expect(crypt.decrypt(key, encrypted)).to eq 'secret'
     end
 
+    it 'Supports hex-encoded keys' do
+      key = OpenSSL::PKey::EC.new('secp256k1').generate_key
+      public_key_hex = key.public_key.to_bn.to_s(16)
+      private_key_hex = key.private_key.to_s(16)
+
+      crypt = ECIES::Crypt.new
+
+      encrypted = crypt.encrypt(public_key_hex, 'secret')
+      expect(crypt.decrypt(private_key_hex, encrypted)).to eq 'secret'
+    end
+
+    it 'Supports other EC curves' do
+      key = OpenSSL::PKey::EC.new('secp224k1').generate_key
+      crypt = ECIES::Crypt.new(ec_group: key.group)
+
+      encrypted = crypt.encrypt(key, 'secret')
+      expect(crypt.decrypt(key, encrypted)).to eq 'secret'
+
+      encrypted = crypt.encrypt(key.public_key.to_bn.to_s(16), 'secret')
+      expect(crypt.decrypt(key.private_key.to_s(16), encrypted)).to eq 'secret'
+    end
+
+    it 'Detects invalid hex-encoded points' do
+      key = OpenSSL::PKey::EC.new('secp224k1').generate_key
+      public_key_hex = key.public_key.to_bn.to_s(16)
+
+      expect{ ECIES::Crypt.new.encrypt(public_key_hex, 'secret') }.to raise_error(OpenSSL::PKey::EC::Point::Error)
+    end
+
     it 'Encrypts to known values' do
       OpenSSL::PKey::EC.class_eval do
         # Overwrites `generate_key` for both the test code below, and the
