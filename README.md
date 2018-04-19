@@ -8,6 +8,8 @@ This library implements Elliptical Curve Integrated Encryption System (ECIES), a
 
 ECIES is a public-key encryption scheme based on ECC. It is designed to be semantically secure in the presence of an adversary capable of launching chosen-plaintext and chosen-ciphertext attacks.
 
+ECIES can be used to encrypt messages to bitcoin addresses with keys published on the blockchain, and subsequently to decrypt messages by the holders of the address's private key.
+
 ## Installation
 
 This library is distributed as a gem named [ecies](https://rubygems.org/gems/ecies) at RubyGems.org.  To install it, run:
@@ -38,16 +40,37 @@ encrypted = crypt.encrypt(key, 'secret message')
 Finally, decrypt the message. In order to decrypt, the key must contain the private component.
 
 ```ruby
-crypt.decrypt(key, encrypted) # => 'secret message'
+crypt.decrypt(key, encrypted) # => "secret message"
 ```
 
-When constructing a `Crypt` object, the default hash digest function is 'SHA256', and the default cipher algorithm is 'AES-256-CTR'. You can also specify alternative cipher or digest algorithms. For example:
+### Encrypting a message to a Bitcoin address
+
+Bitcoin P2PKH addresses themselves contain only *hashes* of public keys (hence the name, pay-to-public-key-hash). However, any time a P2PKH output is spent, the public key associated with the address is published on the blockchain in the transaction's scriptSig. This allows you to encrypt a message to any bitcoin address that has sent a transaction (or published its public key in other ways). To demonstrate this, we'll encrypt a message to Satoshi's public key from Bitcoin's genesis block:
 
 ```ruby
-crypt = ECIES::Crypt.new(cipher: 'AES-256-CBC', digest: 'SHA512')
+public_key_hex =
+    "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb"\
+    "649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"
+encrypted = ECIES::Crypt.new.encrypt(public_key_hex, 'you rock!')
 ```
 
-The `Crypt` object must be initialized with the same parameters when encrypting and decrypting messages.
+To decrypt this message, Satoshi would follow these steps:
+
+```ruby
+private_key_hex = "<satoshi's private key>"
+ECIES::Crypt.new.decrypt(private_key_hex, encrypted) # => "you rock!"
+```
+
+### Default parameters
+
+By default, when constructing a new `ECIES::Crypt` object, it will use the following parameters for ECIES:
+
+ - KDF: ANSI-X9.63-KDF with SHA256
+ - MAC: HMAC-SHA-256-128
+ - Cipher: AES-256-CTR
+ - EC Group: secp256k1
+
+These defaults work well for encrypting messages to bitcoin keys. This library also supports alternate algorithms as described in the below 'Compatibility' section. In order to utilize these other algorithms, initialize an `ECIES::Crypt` object with alternate parameters (see the `ECIES::Crypt.new` documentation for details). The `Crypt` object must be initialized with the same parameters when encrypting and decrypting messages.
 
 ## Compatibility
 
@@ -75,7 +98,7 @@ The sec1-v2 document allows for a many combinations of various algorithms for EC
       - HMAC-SHA-256-128
       - HMAC-SHA-256-256
       - HMAC-SHA-384-192
-      - HMAC-SHA-384-384 (I believe sec1-v2 has a typo here, they state "HMAC-SHA-384-284". 284 bits would be 35.5 bytes, which is non-sensical)
+      - HMAC-SHA-384-384 (I believe sec1-v2 has a typo here, they state "HMAC-SHA-384-284". 284 bits would be 35.5 bytes, which is nonsensical)
       - HMAC-SHA-512-256
       - HMAC-SHA-512-512
     - Not supported:
@@ -99,6 +122,14 @@ The sec1-v2 document allows for a many combinations of various algorithms for EC
 ## Supported platforms
 
 Ruby 2.0 and above.
+
+## Contributing
+
+Bug reports and pull requests welcome! I happily accept any feedback that can improve this library's security.
+
+## Disclaimer
+
+While I have taken every effort to make this library as secure as possible, it is still an early version and has not yet been reviewed by a wide audience. Use at your own risk.
 
 ## Documentation
 
