@@ -53,7 +53,7 @@ module ECIES
 
     # Encrypts a message to a public key using ECIES.
     #
-    # # @param key [OpenSSL::EC:PKey] The public key.
+    # @param key [OpenSSL::EC:PKey] The public key.
     # @param message [String] The plain-text message.
     # @return [String] The octet string of the encrypted message.
     def encrypt(key, message)
