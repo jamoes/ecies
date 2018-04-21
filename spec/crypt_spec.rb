@@ -10,6 +10,9 @@ describe ECIES::Crypt do
 
       encrypted = crypt.encrypt(key, 'secret')
       expect(crypt.decrypt(key, encrypted)).to eq 'secret'
+
+      expect{ ECIES::Crypt.new(mac_length: :full).decrypt(key, encrypted) }.to raise_error(OpenSSL::PKey::ECError)
+      expect{ ECIES::Crypt.new(mac_digest: 'sha512').decrypt(key, encrypted) }.to raise_error(OpenSSL::PKey::ECError)
     end
 
     it 'Supports hex-encoded keys' do
@@ -41,49 +44,47 @@ describe ECIES::Crypt do
       expect{ ECIES::Crypt.new.encrypt(public_key_hex, 'secret') }.to raise_error(OpenSSL::PKey::EC::Point::Error)
     end
 
-    it 'Encrypts to known values' do
-      OpenSSL::PKey::EC.class_eval do
-        # Overwrites `generate_key` for both the test code below, and the
-        # ephemeral_key generated in the `encrypt` method.
-        def generate_key
-          self.private_key = 2
-          self.public_key = group.generator.mul(private_key)
-          self
+    context 'known value' do
+      before(:all) do
+        OpenSSL::PKey::EC.class_eval do
+          # Overwrites `generate_key` for both the key generated below, and the
+          # ephemeral_key generated in the `encrypt` method.
+          def generate_key
+            self.private_key = 2
+            self.public_key = group.generator.mul(private_key)
+            self
+          end
         end
+
+        @key = OpenSSL::PKey::EC.new('secp256k1').generate_key
       end
 
-      key = OpenSSL::PKey::EC.new('secp256k1').generate_key
+      [
+        [ECIES::Crypt.new, "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5B;\x12:\x17\xCE\x84\xAB\x9F\x0E%\xCD\x94~\x1E\xBC\x89$\x11\xEE6\xE4".b],
+        [ECIES::Crypt.new(mac_length: :full), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5B;\x12:\x17\xCEo\x9B\xA7\x955\x89\x9FR\xDF\x1C\xED\x00\x86<\n\x04\v\xD6(\x9D\xF5\xF9\x13\xC8/\xD7os(ZsF".b],
+        [ECIES::Crypt.new(digest: 'sha512', mac_length: :full), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5%\r^\xA9\xD9\xDC\xFB\xD7\x14b\xB4\x00\x84\xABl\xEAh\x0Fc\x805\xAF\x1DT\x05\x87`\xA5\xC4\xB7\xB5r\xF6\x89\xB1U0\x0E \xD4\x1E\x16\x184\xE9:\xE7\x951\xF4\xB3\x93\"A\x85\x1F\x9A\x8E\xAD\xE1(\x1D\xB3\xC4\x15\xD3\xB1\xA8\xFB\x1D".b],
+        [ECIES::Crypt.new(cipher: 'aes-256-cbc', mac_length: :full), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5\x1Fj\x04N\eg($\xD4\xFBD\xFFd\xA1\xA3z\x90T#\x1D\x12{3IM\x93!|\xA5\xAF&\xD4+;\e\xA6i.wD\x1F\xCB\xE1\x90{\xB6\x8B\xAF".b],
+        [ECIES::Crypt.new(mac_digest: 'sha256', kdf_digest: 'sha512'), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5%\r^\xA9\xD9\xDC\xF5\\\x9A\x04\xE0T\x91\xEA=\xA6W\x84X\xBB\xCA\xB4".b],
+      ].each do |crypt, expected_value|
+        it "matches for #{crypt.to_s}" do
+          encrypted = crypt.encrypt(@key, 'secret')
+          expect(encrypted).to eq expected_value
+          expect(crypt.decrypt(@key, encrypted)).to eq 'secret'
+        end
+      end
+    end
 
-      crypt = ECIES::Crypt.new
-      crypt_full = ECIES::Crypt.new(mac_length: :full)
-      crypt_sha512 = ECIES::Crypt.new(digest: 'sha512', mac_length: :full)
-      crypt_cbc = ECIES::Crypt.new(cipher: 'aes-256-cbc', mac_length: :full)
-      crypt_mixed = ECIES::Crypt.new(mac_digest: 'sha256', kdf_digest: 'sha512')
-
-      encrypted = crypt.encrypt(key, 'secret')
-      expect(encrypted).to eq "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5B;\x12:\x17\xCE\x84\xAB\x9F\x0E%\xCD\x94~\x1E\xBC\x89$\x11\xEE6\xE4".force_encoding(Encoding::BINARY)
-      expect(crypt.decrypt(key, encrypted)).to eq 'secret'
-      expect{ crypt_full.decrypt(key, encrypted) }.to raise_error(OpenSSL::PKey::ECError)
-
-      encrypted = crypt_full.encrypt(key, 'secret')
-      expect(encrypted).to eq "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5B;\x12:\x17\xCEo\x9B\xA7\x955\x89\x9FR\xDF\x1C\xED\x00\x86<\n\x04\v\xD6(\x9D\xF5\xF9\x13\xC8/\xD7os(ZsF".force_encoding(Encoding::BINARY)
-      expect(crypt_full.decrypt(key, encrypted)).to eq 'secret'
-      expect{ crypt_sha512.decrypt(key, encrypted) }.to raise_error(OpenSSL::PKey::ECError)
-
-      encrypted = crypt_sha512.encrypt(key, 'secret')
-      expect(encrypted).to eq "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5%\r^\xA9\xD9\xDC\xFB\xD7\x14b\xB4\x00\x84\xABl\xEAh\x0Fc\x805\xAF\x1DT\x05\x87`\xA5\xC4\xB7\xB5r\xF6\x89\xB1U0\x0E \xD4\x1E\x16\x184\xE9:\xE7\x951\xF4\xB3\x93\"A\x85\x1F\x9A\x8E\xAD\xE1(\x1D\xB3\xC4\x15\xD3\xB1\xA8\xFB\x1D".force_encoding(Encoding::BINARY)
-      expect(crypt_sha512.decrypt(key, encrypted)).to eq 'secret'
-      expect{ crypt_full.decrypt(key, encrypted) }.to raise_error(OpenSSL::PKey::ECError)
-
-      encrypted = crypt_cbc.encrypt(key, 'secret')
-      expect(encrypted).to eq "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5\x1Fj\x04N\eg($\xD4\xFBD\xFFd\xA1\xA3z\x90T#\x1D\x12{3IM\x93!|\xA5\xAF&\xD4+;\e\xA6i.wD\x1F\xCB\xE1\x90{\xB6\x8B\xAF".force_encoding(Encoding::BINARY)
-      expect(crypt_cbc.decrypt(key, encrypted)).to eq 'secret'
-      expect{ crypt_mixed.decrypt(key, encrypted) }.to raise_error(OpenSSL::PKey::ECError)
-
-      encrypted = crypt_mixed.encrypt(key, 'secret')
-      expect(encrypted).to eq "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5%\r^\xA9\xD9\xDC\xF5\\\x9A\x04\xE0T\x91\xEA=\xA6W\x84X\xBB\xCA\xB4".force_encoding(Encoding::BINARY)
-      expect(crypt_mixed.decrypt(key, encrypted)).to eq 'secret'
-      expect{ crypt_full.decrypt(key, encrypted) }.to raise_error(OpenSSL::PKey::ECError)
+    it '#to_s' do
+      [
+        [ECIES::Crypt.new,                                             "KDF-SHA256_HMAC-SHA-256-128_AES-256-CTR"],
+        [ECIES::Crypt.new(mac_length: :full),                          "KDF-SHA256_HMAC-SHA-256-256_AES-256-CTR"],
+        [ECIES::Crypt.new(digest: 'sha512'),                           "KDF-SHA512_HMAC-SHA-512-256_AES-256-CTR"],
+        [ECIES::Crypt.new(mac_digest: 'sha512'),                       "KDF-SHA256_HMAC-SHA-512-256_AES-256-CTR"],
+        [ECIES::Crypt.new(mac_digest: 'sha512', kdf_digest: 'sha224'), "KDF-SHA224_HMAC-SHA-512-256_AES-256-CTR"],
+        [ECIES::Crypt.new(cipher: 'aes-128-cbc'),                      "KDF-SHA256_HMAC-SHA-256-128_AES-128-CBC"],
+      ].each do |crypt, expected_value|
+        expect(crypt.to_s).to eq expected_value
+      end
     end
 
     it 'Raises on unknown cipher or digest' do
@@ -103,10 +104,8 @@ describe ECIES::Crypt do
     end
   end
 
-
-
   describe '#kdf' do
-    it 'derivates keys correctly' do
+    it 'derives keys correctly' do
       sha256_test_vectors = [
         # [shared_secret, shared_info, expected_key]
         ['96c05619d56c328ab95fe84b18264b08725b85e33fd34f08', '', '443024c3dae66b95e6f5670601558f71'],

@@ -164,5 +164,11 @@ module ECIES
         end
       end
     end
+
+    def to_s
+      "KDF-#{@kdf_digest.name}_" +
+      "HMAC-SHA-#{@mac_digest.digest_length * 8}-#{@mac_length * 8}_" +
+      @cipher.name
+    end
   end
 end
