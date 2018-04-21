@@ -48,17 +48,17 @@ crypt.decrypt(key, encrypted) # => "secret message"
 Bitcoin P2PKH addresses themselves contain only *hashes* of public keys (hence the name, pay-to-public-key-hash). However, any time a P2PKH output is spent, the public key associated with the address is published on the blockchain in the transaction's scriptSig. This allows you to encrypt a message to any bitcoin address that has sent a transaction (or published its public key in other ways). To demonstrate this, we'll encrypt a message to Satoshi's public key from Bitcoin's genesis block:
 
 ```ruby
-public_key_hex =
+public_key = ECIES::Crypt.public_key_from_hex(
     "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb"\
-    "649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"
-encrypted = ECIES::Crypt.new.encrypt(public_key_hex, 'you rock!')
+    "649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f")
+encrypted = ECIES::Crypt.new.encrypt(public_key, 'you rock!')
 ```
 
 To decrypt this message, Satoshi would follow these steps:
 
 ```ruby
-private_key_hex = "<satoshi's private key>"
-ECIES::Crypt.new.decrypt(private_key_hex, encrypted) # => "you rock!"
+private_key = ECIES::Crypt.private_key_from_hex("<satoshi's private key>")
+ECIES::Crypt.new.decrypt(private_key, encrypted) # => "you rock!"
 ```
 
 ### Default parameters

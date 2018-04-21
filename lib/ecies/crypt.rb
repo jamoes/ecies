@@ -27,9 +27,6 @@ module ECIES
     #     length will be equal to half the mac_digest's digest_legnth. If
     #     :full, the mac length will be equal to the mac_digest's
     #     digest_length.
-    # @param ec_group [OpenSSL::PKey::EC::Group,String] The elliptical curve
-    #     group to use when the key is passed in hex form to `encrypt` or
-    #     `decrypt`.
     # @param kdf_digest [String,OpenSSL::Digest,nil] The digest algorithm to
     #     use for KDF. If not specified, the `digest` argument will be used.
     # @param mac_digest [String,OpenSSL::Digest,nil] The digest algorithm to
@@ -38,9 +35,8 @@ module ECIES
     #     info used for KDF, also known as SharedInfo1.
     # @param mac_shared_info [String] Optional. A string containing the shared
     #     info used for MAC, also known as SharedInfo2.
-    def initialize(cipher: 'AES-256-CTR', digest: 'SHA256', mac_length: :half, ec_group: 'secp256k1', kdf_digest: nil, mac_digest: nil, kdf_shared_info: '', mac_shared_info: '')
+    def initialize(cipher: 'AES-256-CTR', digest: 'SHA256', mac_length: :half, kdf_digest: nil, mac_digest: nil, kdf_shared_info: '', mac_shared_info: '')
       @cipher = OpenSSL::Cipher.new(cipher)
-      @ec_group = OpenSSL::PKey::EC::Group.new(ec_group)
       @mac_digest = OpenSSL::Digest.new(mac_digest || digest)
       @kdf_digest = OpenSSL::Digest.new(kdf_digest || digest)
       @kdf_shared_info = kdf_shared_info
@@ -57,17 +53,10 @@ module ECIES
 
     # Encrypts a message to a public key using ECIES.
     #
-    # @param key [OpenSSL::EC:PKey,String] The public key. An OpenSSL::EC:PKey
-    #     containing the public key, or a hex-encoded string representing the
-    #     public key on this Crypt's `ec_group`.
+    # @param key [OpenSSL::EC:PKey] The public key.
     # @param message [String] The plain-text message.
     # @return [String] The octet string of the encrypted message.
     def encrypt(key, message)
-      if key.is_a?(String)
-        new_key = OpenSSL::PKey::EC.new(@ec_group)
-        new_key.public_key = OpenSSL::PKey::EC::Point.new(@ec_group, OpenSSL::BN.new(key, 16))
-        key = new_key
-      end
       key.public_key? or raise "Must have public key to encrypt"
       @cipher.reset
 
@@ -94,17 +83,9 @@ module ECIES
     # Decrypts a message with a private key using ECIES.
     #
     # @param key [OpenSSL::EC:PKey] The private key.
-    # @param key [OpenSSL::EC:PKey,String] The private key. An OpenSSL::EC:PKey
-    #     containing the private key, or a hex-encoded string representing the
-    #     private key on this Crypt's `ec_group`.
     # @param encrypted_message [String] Octet string of the encrypted message.
     # @return [String] The plain-text message.
     def decrypt(key, encrypted_message)
-      if key.is_a?(String)
-        new_key = OpenSSL::PKey::EC.new(@ec_group)
-        new_key.private_key = OpenSSL::BN.new(key, 16)
-        key = new_key
-      end
       key.private_key? or raise "Must have private key to decrypt"
       @cipher.reset
 
@@ -165,10 +146,44 @@ module ECIES
       end
     end
 
+    # @return [String] A string representing this Crypt's paramaters.
     def to_s
       "KDF-#{@kdf_digest.name}_" +
       "HMAC-SHA-#{@mac_digest.digest_length * 8}-#{@mac_length * 8}_" +
       @cipher.name
+    end
+
+    # Converts a hex-encoded public key to an `OpenSSL::PKey::EC`.
+    #
+    # @param hex_string [String] The hex-encoded public key.
+    # @param ec_group [OpenSSL::PKey::EC::Group,String] The elliptical curve
+    #     group for this public key.
+    # @return [OpenSSL::PKey::EC] The public key.
+    # @raise [OpenSSL::PKey::EC::Point::Error] If the public key is invalid.
+    def self.public_key_from_hex(hex_string, ec_group = 'secp256k1')
+      ec_group = OpenSSL::PKey::EC::Group.new(ec_group) if ec_group.is_a?(String)
+      key = OpenSSL::PKey::EC.new(ec_group)
+      key.public_key = OpenSSL::PKey::EC::Point.new(ec_group, OpenSSL::BN.new(hex_string, 16))
+      key
+    end
+
+    # Converts a hex-encoded private key to an `OpenSSL::PKey::EC`.
+    #
+    # @param hex_string [String] The hex-encoded private key.
+    # @param ec_group [OpenSSL::PKey::EC::Group,String] The elliptical curve
+    #     group for this private key.
+    # @return [OpenSSL::PKey::EC] The private key.
+    # @note The returned key only contains the private component. In order to
+    #     populate the public component of the key, you must compute it as
+    #     follows: `key.public_key = key.group.generator.mul(key.private_key)`.
+    # @raise [OpenSSL::PKey::ECError] If the private key is invalid.
+    def self.private_key_from_hex(hex_string, ec_group = 'secp256k1')
+      ec_group = OpenSSL::PKey::EC::Group.new(ec_group) if ec_group.is_a?(String)
+      key = OpenSSL::PKey::EC.new(ec_group)
+      key.private_key = OpenSSL::BN.new(hex_string, 16)
+      key.private_key < ec_group.order or raise OpenSSL::PKey::ECError, "Private key greater than group's order"
+      key.private_key > 1 or raise OpenSSL::PKey::ECError, "Private key too small"
+      key
     end
   end
 end

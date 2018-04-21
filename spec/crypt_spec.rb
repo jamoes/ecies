@@ -20,28 +20,23 @@ describe ECIES::Crypt do
       public_key_hex = key.public_key.to_bn.to_s(16)
       private_key_hex = key.private_key.to_s(16)
 
-      crypt = ECIES::Crypt.new
+      public_key = ECIES::Crypt.public_key_from_hex(public_key_hex)
+      private_key = ECIES::Crypt.private_key_from_hex(private_key_hex)
 
-      encrypted = crypt.encrypt(public_key_hex, 'secret')
-      expect(crypt.decrypt(private_key_hex, encrypted)).to eq 'secret'
+      expect(public_key.public_key).to eq key.public_key
+      expect(private_key.private_key).to eq key.private_key
+
+      expect{ ECIES::Crypt.public_key_from_hex(public_key_hex, 'secp224k1') }.to raise_error(OpenSSL::PKey::EC::Point::Error)
+      expect{ ECIES::Crypt.private_key_from_hex(private_key_hex, 'secp224k1') }.to raise_error(OpenSSL::PKey::ECError)
+      expect{ ECIES::Crypt.private_key_from_hex("00") }.to raise_error(OpenSSL::PKey::ECError)
     end
 
     it 'Supports other EC curves' do
       key = OpenSSL::PKey::EC.new('secp224k1').generate_key
-      crypt = ECIES::Crypt.new(ec_group: key.group)
+      crypt = ECIES::Crypt.new
 
       encrypted = crypt.encrypt(key, 'secret')
       expect(crypt.decrypt(key, encrypted)).to eq 'secret'
-
-      encrypted = crypt.encrypt(key.public_key.to_bn.to_s(16), 'secret')
-      expect(crypt.decrypt(key.private_key.to_s(16), encrypted)).to eq 'secret'
-    end
-
-    it 'Detects invalid hex-encoded points' do
-      key = OpenSSL::PKey::EC.new('secp224k1').generate_key
-      public_key_hex = key.public_key.to_bn.to_s(16)
-
-      expect{ ECIES::Crypt.new.encrypt(public_key_hex, 'secret') }.to raise_error(OpenSSL::PKey::EC::Point::Error)
     end
 
     context 'known value' do
