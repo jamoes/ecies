@@ -149,7 +149,7 @@ module ECIES
       end
     end
 
-    # @return [String] A string representing this Crypt's paramaters.
+    # @return [String] A string representing this Crypt's parameters.
     def to_s
       "KDF-#{@kdf_digest.name}_" +
       "HMAC-SHA-#{@mac_digest.digest_length * 8}-#{@mac_length * 8}_" +
