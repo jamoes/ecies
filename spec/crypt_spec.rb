@@ -55,11 +55,11 @@ describe ECIES::Crypt do
       end
 
       [
-        [ECIES::Crypt.new, "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5B;\x12:\x17\xCE\x84\xAB\x9F\x0E%\xCD\x94~\x1E\xBC\x89$\x11\xEE6\xE4".b],
-        [ECIES::Crypt.new(mac_length: :full), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5B;\x12:\x17\xCEo\x9B\xA7\x955\x89\x9FR\xDF\x1C\xED\x00\x86<\n\x04\v\xD6(\x9D\xF5\xF9\x13\xC8/\xD7os(ZsF".b],
-        [ECIES::Crypt.new(digest: 'sha512', mac_length: :full), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5%\r^\xA9\xD9\xDC\xFB\xD7\x14b\xB4\x00\x84\xABl\xEAh\x0Fc\x805\xAF\x1DT\x05\x87`\xA5\xC4\xB7\xB5r\xF6\x89\xB1U0\x0E \xD4\x1E\x16\x184\xE9:\xE7\x951\xF4\xB3\x93\"A\x85\x1F\x9A\x8E\xAD\xE1(\x1D\xB3\xC4\x15\xD3\xB1\xA8\xFB\x1D".b],
-        [ECIES::Crypt.new(cipher: 'aes-256-cbc', mac_length: :full), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5\x1Fj\x04N\eg($\xD4\xFBD\xFFd\xA1\xA3z\x90T#\x1D\x12{3IM\x93!|\xA5\xAF&\xD4+;\e\xA6i.wD\x1F\xCB\xE1\x90{\xB6\x8B\xAF".b],
-        [ECIES::Crypt.new(mac_digest: 'sha256', kdf_digest: 'sha512'), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5%\r^\xA9\xD9\xDC\xF5\\\x9A\x04\xE0T\x91\xEA=\xA6W\x84X\xBB\xCA\xB4".b],
+        [ECIES::Crypt.new, "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5C\x9E\xE0\x0FYBZ\xBB\xC8\x95\x93\xC1@\xC6+\xE2/yb\x065\xFF".b],
+        [ECIES::Crypt.new(mac_length: :full), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5C\x9E\xE0\x0FYB\x03.\x1E\x92,[\rI\xBC\xCC\xFD%\xCD)9\v!]]A\xE0\xADc\xBA[\xA4\xF2\xB1\xB5\xC5)\xA4".b],
+        [ECIES::Crypt.new(digest: 'sha512', mac_length: :full), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5\xA2Y\x1A\x7F\xB3\xB2\xA7\xDE\x03\xF4\xA6\e\xD1\x9F\xF9\xD5P\x06\x91\x8EiW\xC82\xD9\xBB\xD2\xC92\xE2\x9F\x15F.\x8C]\xE3Y2\xD3L\xE8\xC4\x9F\xBF\xA5S\x98\x9AYy_Y\xF8\x05\xE7\x19\x9E\xDA\vn;Bvm\xA2`i5:".b],
+        [ECIES::Crypt.new(cipher: 'aes-256-cbc', mac_length: :full), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5\xDF\xCD\x95\xAD!m\xAA/Xv\"\x97\x04\xEE\x9F\xEB^\x1F\xA7\xC9n\xE3\x94l;\xBA\xF2\xBE\xCD\x83\x02+\x02\x9D\x18\x11\x9A\xBEz_\x8A\xDB\xA3\x00\xF7\x8A\x94G".b],
+        [ECIES::Crypt.new(mac_digest: 'sha256', kdf_digest: 'sha512'), "\x02\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5\xA2Y\x1A\x7F\xB3\xB2l\x9E|\xC4\xBCE r\xA6\xB1k\x93W\xE5d\xE4".b],
       ].each do |crypt, expected_value|
         it "matches for #{crypt.to_s}" do
           encrypted = crypt.encrypt(@key, 'secret')
@@ -114,16 +114,24 @@ describe ECIES::Crypt do
         shared_info = [shared_info].pack('H*')
         expected_key = [expected_key].pack('H*')
 
-        computed_key = ECIES::Crypt.new(kdf_shared_info: shared_info).kdf(shared_secret, expected_key.size)
-
+        computed_key = ECIES::Crypt.new(kdf_shared_info: shared_info).kdf(shared_secret, expected_key.size, '')
         expect(computed_key).to eq expected_key
       end
     end
 
+    it 'concats kdf_shared_info with shared_info_suffix' do
+      shared_secret = ['22518b10e70f2a3f243810ae3254139efbee04aa57c7af7d'].pack('H*')
+      shared_info = ['75eef81aa3041e33'].pack('H*')
+      shared_info_suffix = ['b80971203d2c0c52'].pack('H*')
+      expected_key = ['c498af77161cc59f2962b9a713e2b215152d139766ce34a776df11866a69bf2e52a13d9c7c6fc878c50c5ea0bc7b00e0da2447cfd874f6cf92f30d0097111485500c90c3af8b487872d04685d14c8d1dc8d7fa08beb0ce0ababc11f0bd496269142d43525a78e5bc79a17f59676a5706dc54d54d4d1f0bd7e386128ec26afc21'].pack('H*')
+
+      computed_key = ECIES::Crypt.new(kdf_shared_info: shared_info).kdf(shared_secret, expected_key.size, shared_info_suffix)
+      expect(computed_key).to eq expected_key
+    end
+
     it 'raises when size is invalid' do
-      expect{ ECIES::Crypt.new.kdf('a', -1) }.to raise_error(RuntimeError)
-      expect{ ECIES::Crypt.new.kdf('a', 32 * 2**32) }.to raise_error(RuntimeError)
+      expect{ ECIES::Crypt.new.kdf('a', -1, '') }.to raise_error(RuntimeError)
+      expect{ ECIES::Crypt.new.kdf('a', 32 * 2**32, '') }.to raise_error(RuntimeError)
     end
   end
-
 end

@@ -63,10 +63,11 @@ module ECIES
       group_copy = OpenSSL::PKey::EC::Group.new(key.group)
       group_copy.point_conversion_form = :compressed
       ephemeral_key = OpenSSL::PKey::EC.new(group_copy).generate_key
+      ephemeral_public_key_octet = ephemeral_key.public_key.to_bn.to_s(2)
 
       shared_secret = ephemeral_key.dh_compute_key(key.public_key)
 
-      key_pair = kdf(shared_secret, @cipher.key_len + @mac_length)
+      key_pair = kdf(shared_secret, @cipher.key_len + @mac_length, ephemeral_public_key_octet)
       cipher_key = key_pair.byteslice(0, @cipher.key_len)
       hmac_key = key_pair.byteslice(-@mac_length, @mac_length)
 
@@ -77,7 +78,7 @@ module ECIES
 
       mac = OpenSSL::HMAC.digest(@mac_digest, hmac_key, ciphertext + @mac_shared_info).byteslice(0, @mac_length)
 
-      ephemeral_key.public_key.to_bn.to_s(2) + ciphertext + mac
+      ephemeral_public_key_octet + ciphertext + mac
     end
 
     # Decrypts a message with a private key using ECIES.
@@ -96,15 +97,15 @@ module ECIES
       ciphertext_length = encrypted_message.bytesize - ephemeral_public_key_length - @mac_length
       ciphertext_length > 0 or raise OpenSSL::PKey::ECError, "Encrypted message too short"
 
-      ephemeral_public_key_text = encrypted_message.byteslice(0, ephemeral_public_key_length)
+      ephemeral_public_key_octet = encrypted_message.byteslice(0, ephemeral_public_key_length)
       ciphertext = encrypted_message.byteslice(ephemeral_public_key_length, ciphertext_length)
       mac = encrypted_message.byteslice(-@mac_length, @mac_length)
 
-      ephemeral_public_key = OpenSSL::PKey::EC::Point.new(group_copy, OpenSSL::BN.new(ephemeral_public_key_text, 2))
+      ephemeral_public_key = OpenSSL::PKey::EC::Point.new(group_copy, OpenSSL::BN.new(ephemeral_public_key_octet, 2))
 
       shared_secret = key.dh_compute_key(ephemeral_public_key)
 
-      key_pair = kdf(shared_secret, @cipher.key_len + @mac_length)
+      key_pair = kdf(shared_secret, @cipher.key_len + @mac_length, ephemeral_public_key_octet)
       cipher_key = key_pair.byteslice(0, @cipher.key_len)
       hmac_key = key_pair.byteslice(-@mac_length, @mac_length)
 
@@ -120,11 +121,13 @@ module ECIES
 
     # Key-derivation function, compatible with ANSI-X9.63-KDF
     #
-    # @param shared_secret [String] The shared secret from which the key will be
-    #     derived.
+    # @param shared_secret [String] The shared secret from which the key will
+    #     be derived.
     # @param length [Integer] The length of the key to generate.
+    # @param shared_info_suffix [String] The suffix to append to the
+    #     shared_info.
     # @return [String] Octet string of the derived key.
-    def kdf(shared_secret, length)
+    def kdf(shared_secret, length, shared_info_suffix)
       length >=0 or raise "length cannot be negative"
       return "" if length == 0
 
@@ -139,7 +142,7 @@ module ECIES
         counter += 1
         counter_bytes = [counter].pack('N')
 
-        io << @kdf_digest.digest(shared_secret + counter_bytes + @kdf_shared_info)
+        io << @kdf_digest.digest(shared_secret + counter_bytes + @kdf_shared_info + shared_info_suffix)
         if io.pos >= length
           return io.string.byteslice(0, length)
         end

@@ -74,8 +74,7 @@ These defaults work well for encrypting messages to bitcoin keys. This library a
 
 ## Compatibility
 
-The sec1-v2 document allows for a many combinations of various algorithms for ECIES. This library only supports a subset of the allowable algorithms.
-
+The sec1-v2 document allows for many combinations of various algorithms for ECIES. This library only supports a subset of the allowable algorithms:
   - Key Derivation Functions
     - Supported:
       - ANSI-X9.63-KDF
@@ -118,6 +117,10 @@ The sec1-v2 document allows for a many combinations of various algorithms for EC
     - Not supported:
       - 3-key TDES in CBC mode
       - XOR encryption scheme
+
+In addition, the following options have been chosen:
+  - Elliptical curve points are represented in compressed form.
+  - Benign malleability is prevented by including the ephemeral public key as an input to the KDF (sec1-v2 p97).
 
 ## Supported platforms
 
