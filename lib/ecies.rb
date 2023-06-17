@@ -1,4 +1,5 @@
 require 'openssl'
+require 'stringio'
 
 require 'ecies/crypt.rb'
 require 'ecies/version.rb'
