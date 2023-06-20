@@ -1,8 +1,5 @@
 # ECIES - Elliptical Curve Integrated Encryption System
 
-[![Build Status](https://travis-ci.org/jamoes/ecies.svg?branch=master)](https://travis-ci.org/jamoes/ecies)
-[![Gem Version](https://badge.fury.io/rb/ecies.svg)](https://badge.fury.io/rb/ecies)
-
 ## Description
 
 This library implements Elliptical Curve Integrated Encryption System (ECIES), as specified by [SEC 1: Elliptic Curve Cryptography, Version 2.0](http://www.secg.org/sec1-v2.pdf).
