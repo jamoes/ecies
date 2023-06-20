@@ -6,7 +6,7 @@ This library implements Elliptical Curve Integrated Encryption System (ECIES), a
 
 ECIES is a public-key encryption scheme based on ECC. It is designed to be semantically secure in the presence of an adversary capable of launching chosen-plaintext and chosen-ciphertext attacks.
 
-ECIES can be used to encrypt messages to bitcoin addresses with keys published on the blockchain, and subsequently to decrypt messages by the holders of the address's private key.
+ECIES can be used to encrypt messages to bitcoin addresses with public keys published on the blockchain, and subsequently to decrypt messages by the holders of the address's private key.
 
 ## Installation
 
@@ -25,7 +25,7 @@ require 'ecies'
 Intitlialize a key and a `Crypt` object.
 
 ```ruby
-key = OpenSSL::PKey::EC.new('secp256k1').generate_key
+key = OpenSSL::PKey::EC.generate('secp256k1')
 crypt = ECIES::Crypt.new
 ```
 
@@ -49,14 +49,14 @@ Bitcoin P2PKH addresses themselves contain only *hashes* of public keys (hence t
 public_key = ECIES::Crypt.public_key_from_hex(
     "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb"\
     "649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f")
-encrypted = ECIES::Crypt.new.encrypt(public_key, 'you rock!')
+encrypted = ECIES::Crypt.new.encrypt(public_key, 'secret message')
 ```
 
 To decrypt this message, Satoshi would follow these steps:
 
 ```ruby
-private_key = ECIES::Crypt.private_key_from_hex("<satoshi's private key>")
-ECIES::Crypt.new.decrypt(private_key, encrypted) # => "you rock!"
+private_key = OpenSSL::PKey::EC.new("<PEM/DER encoded private key for genesis block>")
+ECIES::Crypt.new.decrypt(private_key, encrypted) # => "secret message"
 ```
 
 ### Default parameters

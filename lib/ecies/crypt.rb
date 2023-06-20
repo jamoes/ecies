@@ -60,10 +60,8 @@ module ECIES
       key.public_key? or raise "Must have public key to encrypt"
       @cipher.reset
 
-      group_copy = OpenSSL::PKey::EC::Group.new(key.group)
-      group_copy.point_conversion_form = :compressed
-      ephemeral_key = OpenSSL::PKey::EC.new(group_copy).generate_key
-      ephemeral_public_key_octet = ephemeral_key.public_key.to_bn.to_s(2)
+      ephemeral_key = OpenSSL::PKey::EC.generate(key.group)
+      ephemeral_public_key_octet = ephemeral_key.public_key.to_octet_string(:compressed)
 
       shared_secret = ephemeral_key.dh_compute_key(key.public_key)
 
@@ -90,10 +88,7 @@ module ECIES
       key.private_key? or raise "Must have private key to decrypt"
       @cipher.reset
 
-      group_copy = OpenSSL::PKey::EC::Group.new(key.group)
-      group_copy.point_conversion_form = :compressed
-
-      ephemeral_public_key_length = group_copy.generator.to_bn.to_s(2).bytesize
+      ephemeral_public_key_length = key.group.generator.to_octet_string(:compressed).bytesize
       ciphertext_length = encrypted_message.bytesize - ephemeral_public_key_length - @mac_length
       ciphertext_length > 0 or raise OpenSSL::PKey::ECError, "Encrypted message too short"
 
@@ -101,7 +96,7 @@ module ECIES
       ciphertext = encrypted_message.byteslice(ephemeral_public_key_length, ciphertext_length)
       mac = encrypted_message.byteslice(-@mac_length, @mac_length)
 
-      ephemeral_public_key = OpenSSL::PKey::EC::Point.new(group_copy, OpenSSL::BN.new(ephemeral_public_key_octet, 2))
+      ephemeral_public_key = OpenSSL::PKey::EC::Point.new(key.group, OpenSSL::BN.new(ephemeral_public_key_octet, 2))
 
       shared_secret = key.dh_compute_key(ephemeral_public_key)
 
@@ -162,31 +157,19 @@ module ECIES
     # @param ec_group [OpenSSL::PKey::EC::Group,String] The elliptical curve
     #     group for this public key.
     # @return [OpenSSL::PKey::EC] The public key.
-    # @raise [OpenSSL::PKey::EC::Point::Error] If the public key is invalid.
+    # @raise [ArgumentError] If the public key is invalid.
     def self.public_key_from_hex(hex_string, ec_group = 'secp256k1')
       ec_group = OpenSSL::PKey::EC::Group.new(ec_group) if ec_group.is_a?(String)
-      key = OpenSSL::PKey::EC.new(ec_group)
-      key.public_key = OpenSSL::PKey::EC::Point.new(ec_group, OpenSSL::BN.new(hex_string, 16))
-      key
-    end
 
-    # Converts a hex-encoded private key to an `OpenSSL::PKey::EC`.
-    #
-    # @param hex_string [String] The hex-encoded private key.
-    # @param ec_group [OpenSSL::PKey::EC::Group,String] The elliptical curve
-    #     group for this private key.
-    # @return [OpenSSL::PKey::EC] The private key.
-    # @note The returned key only contains the private component. In order to
-    #     populate the public component of the key, you must compute it as
-    #     follows: `key.public_key = key.group.generator.mul(key.private_key)`.
-    # @raise [OpenSSL::PKey::ECError] If the private key is invalid.
-    def self.private_key_from_hex(hex_string, ec_group = 'secp256k1')
-      ec_group = OpenSSL::PKey::EC::Group.new(ec_group) if ec_group.is_a?(String)
-      key = OpenSSL::PKey::EC.new(ec_group)
-      key.private_key = OpenSSL::BN.new(hex_string, 16)
-      key.private_key < ec_group.order or raise OpenSSL::PKey::ECError, "Private key greater than group's order"
-      key.private_key > 1 or raise OpenSSL::PKey::ECError, "Private key too small"
-      key
+      sequence = OpenSSL::ASN1.Sequence([
+        OpenSSL::ASN1.Sequence([
+          OpenSSL::ASN1.ObjectId("id-ecPublicKey"),
+          OpenSSL::ASN1::ObjectId(ec_group.curve_name),
+        ]),
+        OpenSSL::ASN1.BitString([hex_string].pack('H*')),
+      ])
+
+      OpenSSL::PKey::EC.new(sequence.to_der)
     end
   end
 end

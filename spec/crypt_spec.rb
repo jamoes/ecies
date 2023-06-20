@@ -5,7 +5,7 @@ describe ECIES::Crypt do
   describe 'Encryption and decryption' do
 
     it 'Encrypts and decrypts' do
-      key = OpenSSL::PKey::EC.new('secp256k1').generate_key
+      key = OpenSSL::PKey::EC.generate('secp256k1')
       crypt = ECIES::Crypt.new
 
       encrypted = crypt.encrypt(key, 'secret')
@@ -16,23 +16,18 @@ describe ECIES::Crypt do
     end
 
     it 'Supports hex-encoded keys' do
-      key = OpenSSL::PKey::EC.new('secp256k1').generate_key
+      key = OpenSSL::PKey::EC.generate('secp256k1')
       public_key_hex = key.public_key.to_bn.to_s(16)
-      private_key_hex = key.private_key.to_s(16)
 
       public_key = ECIES::Crypt.public_key_from_hex(public_key_hex)
-      private_key = ECIES::Crypt.private_key_from_hex(private_key_hex)
 
       expect(public_key.public_key).to eq key.public_key
-      expect(private_key.private_key).to eq key.private_key
 
-      expect{ ECIES::Crypt.public_key_from_hex(public_key_hex, 'secp224k1') }.to raise_error(OpenSSL::PKey::EC::Point::Error)
-      expect{ ECIES::Crypt.private_key_from_hex(private_key_hex, 'secp224k1') }.to raise_error(OpenSSL::PKey::ECError)
-      expect{ ECIES::Crypt.private_key_from_hex("00") }.to raise_error(OpenSSL::PKey::ECError)
+      expect{ ECIES::Crypt.public_key_from_hex(public_key_hex, 'secp224k1') }.to raise_error(ArgumentError)
     end
 
     it 'Supports other EC curves' do
-      key = OpenSSL::PKey::EC.new('secp224k1').generate_key
+      key = OpenSSL::PKey::EC.generate('secp224k1')
       crypt = ECIES::Crypt.new
 
       encrypted = crypt.encrypt(key, 'secret')
@@ -41,17 +36,16 @@ describe ECIES::Crypt do
 
     context 'known value' do
       before(:all) do
-        OpenSSL::PKey::EC.class_eval do
-          # Overwrites `generate_key` for both the key generated below, and the
+        OpenSSL::PKey::EC.instance_eval do
+          # Overwrites `generate` for both the key generated below, and the
           # ephemeral_key generated in the `encrypt` method.
-          def generate_key
-            self.private_key = 2
-            self.public_key = group.generator.mul(private_key)
-            self
+          # The private_key is equal to '2', and the group is 'secp256k1'.
+          def generate(group)
+            OpenSSL::PKey::EC.new("0t\x02\x01\x01\x04 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\xA0\a\x06\x05+\x81\x04\x00\n\xA1D\x03B\x00\x04\xC6\x04\x7F\x94A\xED}m0E@n\x95\xC0|\xD8\\w\x8EK\x8C\xEF<\xA7\xAB\xAC\t\xB9\\p\x9E\xE5\x1A\xE1h\xFE\xA6=\xC39\xA3\xC5\x84\x19Fl\xEA\xEE\xF7\xF62e2f\xD0\xE1#d1\xA9P\xCF\xE5*")
           end
         end
 
-        @key = OpenSSL::PKey::EC.new('secp256k1').generate_key
+        @key = OpenSSL::PKey::EC.generate('secp256k1')
       end
 
       [
@@ -83,7 +77,7 @@ describe ECIES::Crypt do
     end
 
     it 'Raises on unknown cipher or digest' do
-      key = OpenSSL::PKey::EC.new('secp256k1').generate_key
+      key = OpenSSL::PKey::EC.generate('secp256k1')
 
       expect{ ECIES::Crypt.new(digest: 'foo') }.to raise_error(RuntimeError)
       expect{ ECIES::Crypt.new(digest: 'md5') }.to raise_error(RuntimeError)
