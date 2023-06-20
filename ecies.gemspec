@@ -14,9 +14,6 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/jamoes/ecies'
   s.license     = 'MIT'
 
-  s.cert_chain  = ['certs/jamoes.pem']
-  s.signing_key = File.expand_path("~/.ssh/gem-private_key.pem") if $0 =~ /gem\z/
-
   s.files       = `git ls-files`.split("\n")
   s.executables = s.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   s.test_files  = s.files.grep(%r{^(test|spec|features)/})
