@@ -4,6 +4,16 @@ Change log
 This gem follows [Semantic Versioning 2.0.0](http://semver.org/spec/v2.0.0.html).
 All classes and public methods are part of the public API.
 
+0.4.0
+---
+Released on 2023-06-20
+
+- Add support for OpenSSL 3.0.
+- Remove `Crypt.private_key_from_hex` method.
+  - Users can still utilize `OpenSSL::PKey::EC.new` to construct a PKey.
+- `Crypt.public_key_from_hex` now raises `ArgumentError` on an invalid key, rather than an `OpenSSL::PKey::EC::Point::Error`.
+- Explicitly require 'stringio' (thanks thekuwayama!).
+
 0.3.0
 ---
 Released on 2018-04-22
